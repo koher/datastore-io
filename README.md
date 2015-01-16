@@ -1,7 +1,7 @@
 datastore-io
 ========================
 
-_datastore-io_ provides the input and output streams to/from the Datastore for [GAE/J](https://cloud.google.com/appengine/docs/java/).
+_datastore-io_ provides the output and input streams to/from the Datastore for [GAE/J](https://cloud.google.com/appengine/docs/java/), `DatastoreOutputStream` and `DatastoreInputStream`, which can be used instead of `FileOutputStream` and `FileInputStream`.
 
 ```java
 // OutputStream to the Datastore
