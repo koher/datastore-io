@@ -19,7 +19,9 @@ import com.google.appengine.api.datastore.Transaction;
 import com.google.appengine.api.datastore.Query.FilterOperator;
 
 public class DatastoreOutputStream extends OutputStream {
-	public static final int BUFFER_SIZE = 1000000 - 10000;
+	static final int BLOB_SIZE = 1000000 - 10000;
+
+	public static final int BUFFER_SIZE = BLOB_SIZE * 10;
 
 	static final String PROPERTY_NAME = "b";
 
@@ -73,7 +75,7 @@ public class DatastoreOutputStream extends OutputStream {
 
 	private void write(DatastoreService datastore, Transaction transaction,
 			byte[] b, int off, int len) {
-		if (position >= BUFFER_SIZE) {
+		if (position >= BLOB_SIZE) {
 			entityIndex++;
 			currentKey = KeyFactory.createKey(this.key, this.key.getKind(),
 					Integer.toString(entityIndex));
@@ -81,8 +83,8 @@ public class DatastoreOutputStream extends OutputStream {
 		}
 
 		int requiredLength = position + len;
-		if (requiredLength > BUFFER_SIZE) {
-			int firstLength = BUFFER_SIZE - position;
+		if (requiredLength > BLOB_SIZE) {
+			int firstLength = BLOB_SIZE - position;
 			write(datastore, transaction, b, off, firstLength);
 			write(datastore, transaction, b, off + firstLength, len
 					- firstLength);

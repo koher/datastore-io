@@ -14,7 +14,7 @@ import com.google.appengine.api.datastore.KeyFactory;
 import com.google.appengine.api.datastore.Transaction;
 
 public class DatastoreInputStream extends InputStream {
-	public static final int BUFFER_SIZE = DatastoreOutputStream.BUFFER_SIZE;
+	public static final int BUFFER_SIZE = DatastoreOutputStream.BLOB_SIZE;
 
 	private Key key;
 

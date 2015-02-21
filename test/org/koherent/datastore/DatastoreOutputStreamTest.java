@@ -49,7 +49,7 @@ public class DatastoreOutputStreamTest {
 			DatastoreOutputStream out = new DatastoreOutputStream(key);
 
 			try {
-				out.write(new byte[DatastoreOutputStream.BUFFER_SIZE * 10]);
+				out.write(new byte[DatastoreOutputStream.BLOB_SIZE * 10]);
 			} catch (IOException e) {
 				e.printStackTrace();
 				fail(e.getMessage());

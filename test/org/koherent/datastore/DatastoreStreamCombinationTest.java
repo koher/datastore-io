@@ -5,6 +5,7 @@ import static org.junit.Assert.fail;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.Random;
@@ -36,7 +37,7 @@ public class DatastoreStreamCombinationTest {
 	public void testWriteAndRead() {
 		Key key = KeyFactory.createKey("kind", "name");
 
-		byte[] bytes = new byte[DatastoreOutputStream.BUFFER_SIZE * 10];
+		byte[] bytes = new byte[DatastoreOutputStream.BLOB_SIZE * 10];
 		Random random = new Random();
 		random.nextBytes(bytes);
 
@@ -64,7 +65,7 @@ public class DatastoreStreamCombinationTest {
 						+ length, bytes.length - (offset + length));
 				in.read(readBytes, offset, length);
 
-				assertTrue(Arrays.equals(bytes, readBytes));
+				assertEqualsByteArrays(bytes, readBytes);
 			} catch (IOException e) {
 				e.printStackTrace();
 				fail(e.getMessage());
@@ -93,10 +94,78 @@ public class DatastoreStreamCombinationTest {
 					readBytes[i] = (byte) readByte;
 				}
 
-				assertTrue(Arrays.equals(bytes, readBytes));
+				assertEqualsByteArrays(bytes, readBytes);
 			} catch (IOException e) {
 				e.printStackTrace();
 				fail(e.getMessage());
+			}
+		}
+
+		{
+			final int length = 7; // length by which BUFFER_SIZE cannot be divided
+
+			try (BufferedOutputStream out = new BufferedOutputStream(
+					new DatastoreOutputStream(key),
+					DatastoreOutputStream.BUFFER_SIZE)) {
+				for (int offset = 0; offset < bytes.length; offset += length) {
+					out.write(bytes, offset,
+							offset + length < bytes.length ? length
+									: bytes.length - offset);
+				}
+				out.flush();
+			} catch (IOException e) {
+				e.printStackTrace();
+				fail(e.getMessage());
+			}
+
+			try (BufferedInputStream in = new BufferedInputStream(
+					new DatastoreInputStream(key),
+					DatastoreInputStream.BUFFER_SIZE)) {
+				ByteArrayOutputStream out = new ByteArrayOutputStream();
+				byte[] readBytes = new byte[length];
+				int readLength;
+				while ((readLength = in.read(readBytes)) >= 0) {
+					out.write(readBytes, 0, readLength);
+				}
+
+				assertEqualsByteArrays(bytes, out.toByteArray());
+			} catch (IOException e) {
+				e.printStackTrace();
+				fail(e.getMessage());
+			}
+		}
+	}
+
+	private static void assertEqualsByteArrays(byte[] expected, byte[] actual) {
+		int length = expected.length;
+		if (length != actual.length) {
+			fail("expected.length: " + length + ", actual.length: "
+					+ actual.length);
+		}
+
+		for (int i = 0; i < length; i++) {
+			if (expected[i] != actual[i]) {
+				StringBuilder expectedBuilder = new StringBuilder();
+				StringBuilder actualBuilder = new StringBuilder();
+				for (int offset = -10; i <= 10; i++) {
+					int j = i + offset;
+					if (0 <= j && j < length) {
+						if (j == i) {
+							expectedBuilder.append("[");
+							actualBuilder.append("[");
+						}
+						expectedBuilder.append(String.format("%02x",
+								expected[j]));
+						actualBuilder.append(String.format("%02x", actual[j]));
+						if (j == i) {
+							expectedBuilder.append("]");
+							actualBuilder.append("]");
+						}
+					}
+				}
+
+				fail("expected[" + i + "]: " + expectedBuilder.toString()
+						+ ", actual[" + i + "]: " + actualBuilder.toString());
 			}
 		}
 	}
