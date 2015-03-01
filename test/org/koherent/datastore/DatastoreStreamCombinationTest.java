@@ -1,13 +1,15 @@
 package org.koherent.datastore;
 
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.util.Arrays;
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Random;
 
 import org.junit.After;
@@ -129,6 +131,56 @@ public class DatastoreStreamCombinationTest {
 				}
 
 				assertEqualsByteArrays(bytes, out.toByteArray());
+			} catch (IOException e) {
+				e.printStackTrace();
+				fail(e.getMessage());
+			}
+		}
+
+		{
+			byte[] buffer = new byte[8];
+
+			List<Long> numbers = new ArrayList<Long>();
+			for (int i = 0; i < 1200000; i++) {
+				numbers.add(random.nextLong());
+			}
+
+			try (BufferedOutputStream out = new BufferedOutputStream(
+					new DatastoreOutputStream(key),
+					DatastoreOutputStream.BUFFER_SIZE)) {
+				ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+				byteBuffer.putInt(numbers.size());
+				out.write(buffer, 0, 4);
+
+				for (Long number : numbers) {
+					byteBuffer.position(0);
+					byteBuffer.putLong(number);
+					out.write(buffer, 0, 8);
+				}
+
+				out.flush();
+			} catch (IOException e) {
+				e.printStackTrace();
+				fail(e.getMessage());
+			}
+
+			try (BufferedInputStream in = new BufferedInputStream(
+					new DatastoreInputStream(key),
+					DatastoreInputStream.BUFFER_SIZE)) {
+				ByteBuffer byteBuffer = ByteBuffer.wrap(buffer);
+
+				assertEquals(4, in.read(buffer, 0, 4));
+				assertEquals(numbers.size(), byteBuffer.getInt());
+
+				for (Long number : numbers) {
+					for (int readLength = 0; (readLength += in.read(buffer,
+							readLength, 8 - readLength)) >= 0 && readLength < 8;) {
+					}
+					byteBuffer.position(0);
+					assertEquals(number.longValue(), byteBuffer.getLong());
+				}
+
+				assertEquals(-1, in.read(buffer, 0, 8));
 			} catch (IOException e) {
 				e.printStackTrace();
 				fail(e.getMessage());
