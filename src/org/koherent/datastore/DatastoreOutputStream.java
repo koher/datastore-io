@@ -96,7 +96,7 @@ public class DatastoreOutputStream extends OutputStream {
 		try {
 			entity = datastore.get(transaction, currentKey);
 			bytes = ((Blob) entity.getProperty(PROPERTY_NAME)).getBytes();
-			if (requiredLength > bytes.length) {
+			if (requiredLength != bytes.length) {
 				byte[] newBytes = new byte[requiredLength];
 				System.arraycopy(bytes, 0, newBytes, 0, position);
 				bytes = newBytes;
@@ -129,7 +129,7 @@ public class DatastoreOutputStream extends OutputStream {
 			Transaction transaction = datastore.beginTransaction();
 
 			try {
-				Query query = new Query(key);
+				Query query = new Query(key); // Ancestor queries have strong consistency
 				query.setFilter(new Query.FilterPredicate(
 						Entity.KEY_RESERVED_PROPERTY,
 						FilterOperator.GREATER_THAN, currentKey));
