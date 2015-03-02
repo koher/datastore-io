@@ -4,13 +4,16 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
 import java.io.IOException;
+import java.util.List;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import com.google.appengine.api.datastore.Blob;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
+import com.google.appengine.api.datastore.Entity;
 import com.google.appengine.api.datastore.FetchOptions;
 import com.google.appengine.api.datastore.Key;
 import com.google.appengine.api.datastore.KeyFactory;
@@ -38,6 +41,49 @@ public class DatastoreOutputStreamTest {
 			new DatastoreOutputStream(null);
 			fail("Must throw an exception.");
 		} catch (IllegalArgumentException e) {
+		}
+	}
+
+	@Test
+	public void testRewrite() {
+		Key key = KeyFactory.createKey("kind", "name");
+
+		{
+			byte[] bytes = { 2, 3, 5, 7, 11, 13 };
+
+			try (DatastoreOutputStream out = new DatastoreOutputStream(key)) {
+				out.write(bytes);
+			} catch (IllegalArgumentException | IOException e) {
+				e.printStackTrace();
+				fail(e.getMessage());
+			}
+
+			Query query = new Query(key);
+			List<Entity> entities = DatastoreServiceFactory
+					.getDatastoreService().prepare(query)
+					.asList(FetchOptions.Builder.withLimit(100));
+			assertEquals(1, entities.size());
+			DatastoreStreamCombinationTest.assertEqualsByteArrays(bytes,
+					((Blob) entities.get(0).getProperty("b")).getBytes());
+		}
+
+		{
+			byte[] bytes = { 2, 3, 5, 7 };
+
+			try (DatastoreOutputStream out = new DatastoreOutputStream(key)) {
+				out.write(bytes);
+			} catch (IllegalArgumentException | IOException e) {
+				e.printStackTrace();
+				fail(e.getMessage());
+			}
+
+			Query query = new Query(key);
+			List<Entity> entities = DatastoreServiceFactory
+					.getDatastoreService().prepare(query)
+					.asList(FetchOptions.Builder.withLimit(100));
+			assertEquals(1, entities.size());
+			DatastoreStreamCombinationTest.assertEqualsByteArrays(bytes,
+					((Blob) entities.get(0).getProperty("b")).getBytes());
 		}
 	}
 

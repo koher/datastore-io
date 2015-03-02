@@ -1,7 +1,7 @@
 package org.koherent.datastore;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
@@ -188,7 +188,7 @@ public class DatastoreStreamCombinationTest {
 		}
 	}
 
-	private static void assertEqualsByteArrays(byte[] expected, byte[] actual) {
+	static void assertEqualsByteArrays(byte[] expected, byte[] actual) {
 		int length = expected.length;
 		if (length != actual.length) {
 			fail("expected.length: " + length + ", actual.length: "
