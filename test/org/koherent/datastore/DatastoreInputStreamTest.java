@@ -1,6 +1,6 @@
 package org.koherent.datastore;
 
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 
@@ -58,5 +58,13 @@ public class DatastoreInputStreamTest {
 			fail("Must throw an exception.");
 		} catch (IOException e) {
 		}
+	}
+
+	@Test
+	public void testUnexisting() throws IOException {
+		DatastoreInputStream in = new DatastoreInputStream(
+				KeyFactory.createKey("kind", "unexisting"));
+		assertEquals(-1, in.read());
+		in.close();
 	}
 }
