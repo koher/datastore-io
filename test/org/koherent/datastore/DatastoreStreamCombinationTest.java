@@ -39,7 +39,7 @@ public class DatastoreStreamCombinationTest {
 	public void testWriteAndRead() {
 		Key key = KeyFactory.createKey("kind", "name");
 
-		byte[] bytes = new byte[DatastoreOutputStream.BLOB_SIZE * 10];
+		byte[] bytes = new byte[DatastoreOutputStream.BUFFER_SIZE * 10];
 		Random random = new Random();
 		random.nextBytes(bytes);
 
