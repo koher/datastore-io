@@ -4,7 +4,6 @@ import java.io.IOException;
 import java.io.InputStream;
 
 import com.google.appengine.api.datastore.Blob;
-import com.google.appengine.api.datastore.DatastoreFailureException;
 import com.google.appengine.api.datastore.DatastoreService;
 import com.google.appengine.api.datastore.DatastoreServiceFactory;
 import com.google.appengine.api.datastore.Entity;
@@ -16,6 +15,7 @@ import com.google.appengine.api.datastore.Transaction;
 public class DatastoreInputStream extends InputStream {
 	public static final int BUFFER_SIZE = DatastoreOutputStream.BUFFER_SIZE;
 
+	private Transaction transaction;
 	private Key key;
 
 	private int entityIndex;
@@ -23,6 +23,10 @@ public class DatastoreInputStream extends InputStream {
 	private int position;
 
 	public DatastoreInputStream(Key key) {
+		this(null, key);
+	}
+
+	public DatastoreInputStream(Transaction transaction, Key key) {
 		if (key == null) {
 			throw new IllegalArgumentException("'key' cannot be null.");
 		}
@@ -51,28 +55,15 @@ public class DatastoreInputStream extends InputStream {
 	@Override
 	public int read(byte[] b, int off, int len) throws IOException {
 		throwExceptionIfClosed();
-
-		DatastoreService datastore = DatastoreServiceFactory
-				.getDatastoreService();
-
 		try {
-			Transaction transaction = datastore.beginTransaction();
-			try {
-				return read(datastore, transaction, b, off, len);
-			} catch (DatastoreFailureException e) {
-				transaction.rollback();
-				throw new IOException(e);
-			} catch (RuntimeException e) {
-				transaction.rollback();
-				throw e;
-			}
-		} catch (DatastoreFailureException e) {
+			return read(DatastoreServiceFactory.getDatastoreService(), b, off,
+					len);
+		} catch (RuntimeException e) {
 			throw new IOException(e);
 		}
 	}
 
-	private int read(DatastoreService datastore, Transaction transaction,
-			byte[] b, int off, int len) {
+	private int read(DatastoreService datastore, byte[] b, int off, int len) {
 		if (position >= BUFFER_SIZE) {
 			entityIndex++;
 			currentKey = KeyFactory.createKey(this.key, this.key.getKind(),
@@ -83,13 +74,13 @@ public class DatastoreInputStream extends InputStream {
 		int requiredLength = position + len;
 		if (requiredLength > BUFFER_SIZE) {
 			int firstLength = BUFFER_SIZE - position;
-			int readLength = read(datastore, transaction, b, off, firstLength);
+			int readLength = read(datastore, b, off, firstLength);
 			if (readLength < firstLength) {
 				return readLength;
 			}
 
-			int otherLength = read(datastore, transaction, b,
-					off + firstLength, len - firstLength);
+			int otherLength = read(datastore, b, off + firstLength, len
+					- firstLength);
 			if (otherLength < 0) {
 				return firstLength;
 			} else {
