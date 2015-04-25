@@ -22,6 +22,7 @@ public class DatastoreOutputStream extends OutputStream {
 	static final String PROPERTY_NAME = "b";
 
 	private Transaction transaction;
+	private boolean transactional;
 	private Key key;
 
 	private int entityIndex;
@@ -29,7 +30,14 @@ public class DatastoreOutputStream extends OutputStream {
 	private int position;
 
 	public DatastoreOutputStream(Key key) throws IllegalArgumentException {
+		this(false, key);
+	}
+
+	public DatastoreOutputStream(boolean transactional, Key key)
+			throws IllegalArgumentException {
 		this(null, key);
+
+		this.transactional = transactional;
 	}
 
 	public DatastoreOutputStream(Transaction transaction, Key key)
@@ -45,6 +53,19 @@ public class DatastoreOutputStream extends OutputStream {
 		currentKey = KeyFactory.createKey(this.key, this.key.getKind(),
 				Integer.toString(entityIndex));
 		position = 0;
+	}
+
+	private Transaction getTransaction() {
+		if (transaction != null) {
+			return transaction;
+		}
+
+		if (transactional) {
+			transaction = DatastoreServiceFactory.getDatastoreService()
+					.beginTransaction();
+		}
+
+		return transaction;
 	}
 
 	@Override
@@ -78,6 +99,8 @@ public class DatastoreOutputStream extends OutputStream {
 			return;
 		}
 
+		Transaction transaction = getTransaction();
+
 		Entity entity;
 		byte[] bytes;
 		try {
@@ -107,9 +130,9 @@ public class DatastoreOutputStream extends OutputStream {
 
 	@Override
 	public void close() throws IOException {
-		throwExceptionIfClosed();
-
 		try {
+			throwExceptionIfClosed();
+
 			DatastoreService datastore = DatastoreServiceFactory
 					.getDatastoreService();
 
@@ -125,8 +148,18 @@ public class DatastoreOutputStream extends OutputStream {
 			datastore.delete(transaction, keys);
 
 			currentKey = null;
+
+			if (transactional && transaction != null) {
+				transaction.commit();
+			}
+		} catch (IOException e) {
+			throw e;
 		} catch (RuntimeException e) {
 			throw new IOException(e);
+		} finally {
+			if (transactional && transaction != null && transaction.isActive()) {
+				transaction.rollback();
+			}
 		}
 	}
 

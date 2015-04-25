@@ -16,17 +16,27 @@ public class DatastoreInputStream extends InputStream {
 	public static final int BUFFER_SIZE = DatastoreOutputStream.BUFFER_SIZE;
 
 	private Transaction transaction;
+	private boolean transactional;
+
 	private Key key;
 
 	private int entityIndex;
 	private Key currentKey;
 	private int position;
 
-	public DatastoreInputStream(Key key) {
+	public DatastoreInputStream(Key key) throws IllegalArgumentException {
 		this(null, key);
 	}
 
-	public DatastoreInputStream(Transaction transaction, Key key) {
+	public DatastoreInputStream(boolean transactional, Key key)
+			throws IllegalArgumentException {
+		this(null, key);
+
+		this.transactional = transactional;
+	}
+
+	public DatastoreInputStream(Transaction transaction, Key key)
+			throws IllegalArgumentException {
 		if (key == null) {
 			throw new IllegalArgumentException("'key' cannot be null.");
 		}
@@ -36,6 +46,19 @@ public class DatastoreInputStream extends InputStream {
 		currentKey = KeyFactory.createKey(this.key, this.key.getKind(),
 				Integer.toString(entityIndex));
 		position = 0;
+	}
+
+	private Transaction getTransaction() {
+		if (transaction != null) {
+			return transaction;
+		}
+
+		if (transactional) {
+			transaction = DatastoreServiceFactory.getDatastoreService()
+					.beginTransaction();
+		}
+
+		return transaction;
 	}
 
 	@Override
@@ -88,6 +111,8 @@ public class DatastoreInputStream extends InputStream {
 			}
 		}
 
+		Transaction transaction = getTransaction();
+
 		Entity entity;
 		byte[] bytes;
 		try {
@@ -108,8 +133,14 @@ public class DatastoreInputStream extends InputStream {
 
 	@Override
 	public void close() throws IOException {
-		throwExceptionIfClosed();
-		currentKey = null;
+		try {
+			throwExceptionIfClosed();
+			currentKey = null;
+		} finally {
+			if (transactional) {
+				transaction.commit();
+			}
+		}
 	}
 
 	private void throwExceptionIfClosed() throws IOException {

@@ -49,7 +49,7 @@ public class DatastoreStreamCombinationTest {
 					- (offset + Math.abs(random.nextInt() % 10000));
 
 			try (BufferedOutputStream out = new BufferedOutputStream(
-					new DatastoreOutputStream(key),
+					new DatastoreOutputStream(true, key),
 					DatastoreOutputStream.BUFFER_SIZE)) {
 				out.write(bytes, offset, length);
 				out.flush();
@@ -59,7 +59,7 @@ public class DatastoreStreamCombinationTest {
 			}
 
 			try (BufferedInputStream in = new BufferedInputStream(
-					new DatastoreInputStream(key),
+					new DatastoreInputStream(true, key),
 					DatastoreInputStream.BUFFER_SIZE)) {
 				byte[] readBytes = new byte[bytes.length];
 				System.arraycopy(bytes, 0, readBytes, 0, offset);
@@ -76,7 +76,7 @@ public class DatastoreStreamCombinationTest {
 
 		{
 			try (BufferedOutputStream out = new BufferedOutputStream(
-					new DatastoreOutputStream(key),
+					new DatastoreOutputStream(true, key),
 					DatastoreOutputStream.BUFFER_SIZE)) {
 				for (byte b : bytes) {
 					out.write(b & 0xff);
@@ -88,7 +88,7 @@ public class DatastoreStreamCombinationTest {
 			}
 
 			try (BufferedInputStream in = new BufferedInputStream(
-					new DatastoreInputStream(key),
+					new DatastoreInputStream(true, key),
 					DatastoreInputStream.BUFFER_SIZE)) {
 				byte[] readBytes = new byte[bytes.length];
 				int readByte;
@@ -107,7 +107,7 @@ public class DatastoreStreamCombinationTest {
 			final int length = 7; // length by which BUFFER_SIZE cannot be divided
 
 			try (BufferedOutputStream out = new BufferedOutputStream(
-					new DatastoreOutputStream(key),
+					new DatastoreOutputStream(true, key),
 					DatastoreOutputStream.BUFFER_SIZE)) {
 				for (int offset = 0; offset < bytes.length; offset += length) {
 					out.write(bytes, offset,
@@ -121,7 +121,7 @@ public class DatastoreStreamCombinationTest {
 			}
 
 			try (BufferedInputStream in = new BufferedInputStream(
-					new DatastoreInputStream(key),
+					new DatastoreInputStream(true, key),
 					DatastoreInputStream.BUFFER_SIZE)) {
 				ByteArrayOutputStream out = new ByteArrayOutputStream();
 				byte[] readBytes = new byte[length];
